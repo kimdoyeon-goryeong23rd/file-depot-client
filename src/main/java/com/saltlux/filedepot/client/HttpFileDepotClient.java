@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import me.hanju.filedepot.api.dto.BatchDownloadRequest;
+import me.hanju.filedepot.api.dto.ChunkDto;
 import me.hanju.filedepot.api.dto.CommonResponseDto;
 import me.hanju.filedepot.api.dto.ConfirmUploadRequest;
 import me.hanju.filedepot.api.dto.DownloadUrlResponse;
@@ -41,9 +42,10 @@ public class HttpFileDepotClient implements FileDepotClient {
   }
 
   @Override
-  public StorageItemDto confirmUpload(final String id) {
+  public StorageItemDto confirmUpload(final String id, final String fileName) {
     requireNonBlank(id, "id");
-    final ConfirmUploadRequest request = new ConfirmUploadRequest(id);
+    requireMaxLength(fileName, 255, "fileName");
+    final ConfirmUploadRequest request = new ConfirmUploadRequest(id, fileName);
     final CommonResponseDto<StorageItemDto> response = doPost(
         "/api/files/confirm-upload",
         request,
@@ -53,10 +55,13 @@ public class HttpFileDepotClient implements FileDepotClient {
   }
 
   @Override
-  public StorageItemDto getFileMetadata(final String id) {
+  public StorageItemDto getFileMetadata(final String id, final boolean withContent) {
     requireNonBlank(id, "id");
+    final String uri = withContent
+        ? "/api/files/{id}?withContent=true"
+        : "/api/files/{id}";
     final CommonResponseDto<StorageItemDto> response = doGet(
-        "/api/files/{id}",
+        uri,
         new ParameterizedTypeReference<>() {
         },
         id);
@@ -90,6 +95,20 @@ public class HttpFileDepotClient implements FileDepotClient {
     requireNonEmptyIds(ids, "ids");
     final BatchDownloadRequest request = new BatchDownloadRequest(ids);
     return doPostForBytes("/api/files/download/batch", request);
+  }
+
+  @Override
+  public List<ChunkDto> getChunks(final String id, final boolean withEmbedding) {
+    requireNonBlank(id, "id");
+    final String uri = withEmbedding
+        ? "/api/files/{id}/chunks?withEmbedding=true"
+        : "/api/files/{id}/chunks";
+    final CommonResponseDto<List<ChunkDto>> response = doGet(
+        uri,
+        new ParameterizedTypeReference<>() {
+        },
+        id);
+    return unwrap(response);
   }
 
   // ========== HTTP 요청 메서드 ==========
@@ -169,6 +188,12 @@ public class HttpFileDepotClient implements FileDepotClient {
   private static void requireNonBlank(final String value, final String paramName) {
     if (value == null || value.isBlank()) {
       throw new IllegalArgumentException(paramName + " must not be null or blank");
+    }
+  }
+
+  private static void requireMaxLength(final String value, final int maxLength, final String paramName) {
+    if (value != null && value.length() > maxLength) {
+      throw new IllegalArgumentException(paramName + " must not exceed " + maxLength + " characters");
     }
   }
 

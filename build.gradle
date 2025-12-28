@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.saltlux.filedepot'
-version = '0.1.0'
+version = '0.2.0'
 description = 'Java SDK for File Depot'
 
 java {
@@ -31,7 +31,7 @@ repositories {
 }
 
 dependencies {
-    api 'com.github.agent-hanju:file-depot-api:0.1.0'
+    api 'com.github.agent-hanju:file-depot-api:0.2.0'
 
     api 'org.springframework:spring-webflux:6.2.7'
     api 'io.projectreactor.netty:reactor-netty-http:1.2.5'
@@ -59,7 +59,7 @@ publishing {
             from components.java
 
             pom {
-                name = project.name
+                name = "File Depot Client"
                 description = project.description
                 url = 'https://github.com/kimdoyeon-goryeong23rd/file-depot-client'
 

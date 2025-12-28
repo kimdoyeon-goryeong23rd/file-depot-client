@@ -2,6 +2,7 @@ package com.saltlux.filedepot.client;
 
 import java.util.List;
 
+import me.hanju.filedepot.api.dto.ChunkDto;
 import me.hanju.filedepot.api.dto.DownloadUrlResponse;
 import me.hanju.filedepot.api.dto.StorageItemDto;
 import me.hanju.filedepot.api.dto.UploadUrlResponse;
@@ -31,24 +32,26 @@ public interface FileDepotClient {
   /**
    * 파일 업로드 완료를 확인합니다.
    *
-   * @param id 파일 UUID (not null, not blank)
+   * @param id       파일 UUID (not null, not blank)
+   * @param fileName 원본 파일명 (nullable, 최대 255자. null이면 UUID로 대체)
    * @return 저장된 파일 메타데이터
    * @throws IllegalArgumentException id가 null이거나 blank인 경우
    * @throws FileDepotException       서버 에러
    * @throws FileDepotClientException 클라이언트 에러
    */
-  StorageItemDto confirmUpload(String id);
+  StorageItemDto confirmUpload(String id, String fileName);
 
   /**
    * 파일 메타데이터를 조회합니다.
    *
-   * @param id 파일 UUID (not null, not blank)
+   * @param id          파일 UUID (not null, not blank)
+   * @param withContent true이면 파싱된 텍스트 컨텐츠(content 필드)도 포함
    * @return 파일 메타데이터
    * @throws IllegalArgumentException id가 null이거나 blank인 경우
    * @throws FileDepotException       서버 에러 (파일 없음 등)
    * @throws FileDepotClientException 클라이언트 에러
    */
-  StorageItemDto getFileMetadata(String id);
+  StorageItemDto getFileMetadata(String id, boolean withContent);
 
   /**
    * 파일 다운로드를 위한 presigned URL을 발급받습니다.
@@ -81,5 +84,17 @@ public interface FileDepotClient {
    * @throws FileDepotClientException 클라이언트 에러
    */
   byte[] downloadBatch(List<String> ids);
+
+  /**
+   * 파일의 청크 목록을 조회합니다.
+   *
+   * @param id            파일 UUID (not null, not blank)
+   * @param withEmbedding true이면 각 청크의 임베딩 벡터도 포함
+   * @return 청크 목록
+   * @throws IllegalArgumentException id가 null이거나 blank인 경우
+   * @throws FileDepotException       서버 에러 (파일 없음 등)
+   * @throws FileDepotClientException 클라이언트 에러
+   */
+  List<ChunkDto> getChunks(String id, boolean withEmbedding);
 
 }
