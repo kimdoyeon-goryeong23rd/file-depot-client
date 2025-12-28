@@ -12,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.agent-hanju:file-depot-client:0.1.0'
+    implementation 'com.github.agent-hanju:file-depot-client:0.2.0'
 }
 ```
 
@@ -29,7 +29,7 @@ dependencies {
 <dependency>
     <groupId>com.github.agent-hanju</groupId>
     <artifactId>file-depot-client</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
@@ -60,8 +60,8 @@ String uploadUrl = uploadInfo.uploadUrl();
 // 2. presigned URL로 파일 업로드 (HTTP PUT)
 // ... 직접 HTTP 클라이언트로 업로드 ...
 
-// 3. 업로드 완료 확인
-StorageItemDto metadata = client.confirmUpload(fileId);
+// 3. 업로드 완료 확인 (fileName은 nullable, null이면 UUID로 대체)
+StorageItemDto metadata = client.confirmUpload(fileId, "original-filename.pdf");
 ```
 
 ### 파일 다운로드
@@ -78,7 +78,22 @@ String downloadUrl = downloadInfo.downloadUrl();
 ### 파일 메타데이터 조회
 
 ```java
-StorageItemDto metadata = client.getFileMetadata(fileId);
+// 기본 메타데이터 조회
+StorageItemDto metadata = client.getFileMetadata(fileId, false);
+
+// 파싱된 텍스트 컨텐츠 포함 조회
+StorageItemDto metadataWithContent = client.getFileMetadata(fileId, true);
+String content = metadataWithContent.content();
+```
+
+### 청크 조회
+
+```java
+// 청크 목록 조회
+List<ChunkDto> chunks = client.getChunks(fileId, false);
+
+// 임베딩 벡터 포함 조회
+List<ChunkDto> chunksWithEmbedding = client.getChunks(fileId, true);
 ```
 
 ### 파일 삭제
@@ -103,7 +118,7 @@ byte[] zipBytes = client.downloadBatch(List.of(fileId1, fileId2));
 
 ```java
 try {
-    client.getFileMetadata(fileId);
+    client.getFileMetadata(fileId, false);
 } catch (IllegalArgumentException e) {
     // 파라미터 오류
 } catch (FileDepotException e) {

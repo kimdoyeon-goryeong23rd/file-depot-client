@@ -2,6 +2,7 @@ package com.saltlux.filedepot.client;
 
 import java.time.Duration;
 
+import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -17,11 +18,12 @@ public final class TestContainersConfig {
 
   private static final String MARIADB_IMAGE = "mariadb:11.2";
   private static final String MINIO_IMAGE = "minio/minio:latest";
-  private static final String FILE_DEPOT_IMAGE = "kimdoyeon/file-depot:0.1.0";
+  private static final String FILE_DEPOT_IMAGE = "kimdoyeon/file-depot:0.2.0";
 
   private static final String MINIO_USER = "minioadmin";
   private static final String MINIO_PASSWORD = "minioadmin";
   private static final String MINIO_BUCKET = "file-depot";
+  private static final int MINIO_FIXED_PORT = 19000;
 
   private static final Network NETWORK = Network.newNetwork();
 
@@ -65,12 +67,14 @@ public final class TestContainersConfig {
             .withStartupTimeout(Duration.ofMinutes(2)));
   }
 
-  @SuppressWarnings("resource")
+  @SuppressWarnings({ "resource", "deprecation" })
   private static GenericContainer<?> createMinioContainer() {
-    return new GenericContainer<>(DockerImageName.parse(MINIO_IMAGE))
+    return new FixedHostPortGenericContainer<>(MINIO_IMAGE)
+        .withFixedExposedPort(MINIO_FIXED_PORT, 9000)
         .withExposedPorts(9000, 9001)
         .withEnv("MINIO_ROOT_USER", MINIO_USER)
         .withEnv("MINIO_ROOT_PASSWORD", MINIO_PASSWORD)
+        .withEnv("MINIO_SERVER_URL", "http://localhost:" + MINIO_FIXED_PORT)
         .withCommand("server", "/data", "--console-address", ":9001")
         .withNetwork(NETWORK)
         .withNetworkAliases("minio")
@@ -91,7 +95,8 @@ public final class TestContainersConfig {
         .withEnv("DDL_AUTO", "update")
         .withEnv("DB_POOL_SIZE", "5")
         // MinIO (application-prod.yml)
-        .withEnv("MINIO_URL", "http://minio:9000")
+        // Use host.docker.internal so presigned URLs work from host machine
+        .withEnv("MINIO_URL", "http://host.docker.internal:" + MINIO_FIXED_PORT)
         .withEnv("MINIO_ACCESS_KEY", MINIO_USER)
         .withEnv("MINIO_SECRET_KEY", MINIO_PASSWORD)
         .withEnv("MINIO_BUCKET", MINIO_BUCKET)
